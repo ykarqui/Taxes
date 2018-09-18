@@ -6,13 +6,35 @@ import java.io.InputStreamReader;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import org.hibernate.HibernateException;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.hibernate.cfg.Configuration;
 import org.json.JSONObject;
+
+import edu.iua.calculator.model.Taxes;
 
 /**
  * Taxes Calculator returns a calculated total amount based on taxes percentages
  */
+
 public class TaxesCalculator {
+
+	private static SessionFactory factory;
+
 	public static void main(String[] args) {
+
+		try {
+			factory = new Configuration().configure().buildSessionFactory();
+
+		} catch (Throwable ex) {
+			System.err.println("Failed to created session factory object." + ex);
+			throw new ExceptionInInitializerError(ex);
+		}
+
 		System.out.print("Enter amount value: ");
 
 		InputStreamReader isr = new InputStreamReader(System.in);
@@ -37,17 +59,26 @@ public class TaxesCalculator {
 
 	public static HashMap<String, Float> getTaxesPercentage() {
 
+		Session session = factory.openSession();
+		Transaction tx = null;
 		HashMap<String, Float> taxesPercentage = new HashMap<String, Float>();
 
 		try {
-			Statement stmt = getConnection().createStatement();
-			ResultSet rs = stmt.executeQuery("select tax_name, tax_percentage from taxes_details");
-			while (rs.next()) {
-				taxesPercentage.put(rs.getString(1), rs.getFloat(2));
-			}
+			tx = session.beginTransaction();
+			List taxes = session.createQuery("FROM Taxes").list();
+			for (Iterator iterator = taxes.iterator(); iterator.hasNext();) {
+				Taxes tax = (Taxes) iterator.next();
+				taxesPercentage.put(tax.getTaxName(), tax.getTaxPercentage());
 
-		} catch (Exception e) {
-			System.out.println(e);
+			}
+			tx.commit();
+
+		} catch (HibernateException e) {
+			if (tx != null)
+				tx.rollback();
+			e.printStackTrace();
+		} finally {
+			session.close();
 		}
 
 		return taxesPercentage;
@@ -57,7 +88,6 @@ public class TaxesCalculator {
 
 		HashMap<String, Float> calculatedTaxesAmount = new HashMap<String, Float>();
 
-		
 		HashMap<String, Float> taxesPercentages = getTaxesPercentage();
 
 		System.out.println("Applicable taxes:");

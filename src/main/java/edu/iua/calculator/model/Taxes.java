@@ -1,11 +1,23 @@
 package edu.iua.calculator.model;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
-
+@Entity
+@Table(name = "taxes_details")
 public class Taxes {
-
+	
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "id")
 	private int id;
+	@Column(name = "tax_name")
 	private String taxName;
+	@Column(name = "tax_percentage")
 	private Float taxPercentage;
 
 
